@@ -1,0 +1,665 @@
+{
+  "name": "Apollo Outreach Skool Template",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Organization Name: {{ $('Get row(s) in sheet').item.json.organizationName }}\n\nBackground for icebreaker: {{ $json.choices[0].message.content }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are a company name normalizer and icebreaker generator for cold outreach emails.\n\nTASK 1: NORMALIZE COMPANY NAME\nTake the official company name and output the casual conversational version:\n- Remove LLC, Inc., Corp., Ltd., etc.\n- Remove colons, slashes, taglines, and descriptive phrases\n- Fix ALL CAPS to proper case\n- Keep ampersands (&) and \"Co.\" when they're part of the core name\n- Output how the company name would be spoken in conversation\n\nTASK 2: CREATE ICEBREAKER\nCreate one natural sentence: \"Love what you're doing with [company], especially [unique thing we noticed]. Wanted to reach out.\"\n\nREQUIREMENTS:\n- Pick the most SURPRISING/INTERESTING detail that makes them unique\n- Keep the \"especially\" part to MAXIMUM 10 words\n- PARAPHRASE in simple, natural language\n- USE VARIED SENTENCE STRUCTURES - mix up your phrasing naturally\n- Focus on what made you think \"oh, that's clever/different\"\n- Write like you're genuinely commenting on something that caught your eye\n- ALWAYS end with \"Wanted to reach out.\"\n- Avoid overused words like \"seamless,\" \"truly,\" \"smart,\" \"really,\" \"the way you\"\n- Avoid generic observations that could apply to any company\n\nSTRUCTURE VARIETY EXAMPLES:\n- \"especially [person's] [quote/philosophy]\"\n- \"especially the [specific approach/strategy]\"  \n- \"especially [unique positioning/focus]\"\n- \"especially being [achievement/status]\"\n- \"especially that [surprising detail]\"\n- \"especially [interesting partnership/method]\"\n\nGOOD EXAMPLES (short and specific):\n- \"Love what you're doing with TAG Digital Marketing, especially being one of Google's first platinum agencies. Wanted to reach out.\"\n- \"Love what you're doing with Backroom, especially burning down the old agency model. Wanted to reach out.\"\n- \"Love what you're doing with Glass, especially using blockchain to navigate complex alcohol rules. Wanted to reach out.\"\n- \"Love what you're doing with Cowsultants, especially the Everything for the Cow approach. Wanted to reach out.\"\n\nBAD EXAMPLES:\n- \"especially the way you combine precise craftsmanship with total project management to make signs that actually drive business\" (TOO LONG - 18 words)\n- \"especially the way you focus on building lasting client relationships\" (GENERIC)\n- \"especially creators who truly fit their vibe\" (USES BANNED WORD \"truly\")\n\nTONE: Short, punchy, naturally varied - like you noticed one specific thing that stood out.\n\nGenerate the complete icebreaker sentence."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        768,
+        -48
+      ],
+      "id": "fb1c5046-93b7-4ed0-9bac-b24ddbb8e6bc",
+      "name": "Generate Outreach Message",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "",
+          "cachedResultUrl": ""
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        128,
+        -48
+      ],
+      "id": "1ebcc923-f19e-44b7-843a-7249730f53d6",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HNuP2FNGuxccuix4",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.instantly.ai/api/v2/leads",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer APIKEYHERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"campaign\": \"CAMPAIGN-ID-HERE\",\n  \"email\": \"{{ $(\"Get row(s) in sheet\").item.json.email }}\",\n  \"last_name\": \"{{ $(\"Get row(s) in sheet\").item.json.lastName }}\",\n  \"first_name\": \"{{ $(\"Get row(s) in sheet\").item.json.firstName }}\",\n  \"company_name\": \"{{ $(\"Get row(s) in sheet\").item.json.organizationName }}\",\n  \"custom_variables\": {\n    \"custom_company_name\": \"{{ $json.output.custom_company_name }}\",\n    \"icebreaker\": \"{{ $json.output.icebreaker }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1216,
+        -48
+      ],
+      "id": "de1a3c5e-10a0-4edb-9347-edd3053980ee",
+      "name": "Add Lead to Instantly AI",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"icebreaker\": \"Love what you're doing with Effective Sign Works. Bob's philosophy of 'only as good as your last job' really resonates. Wanted to reach out.\",\n    \"custom_company_name\": \"Effective Sign Works\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        944,
+        144
+      ],
+      "id": "338d4a51-f409-4757-a03a-87a9c8a87f1d",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "messages": {
+          "message": [
+            {
+              "content": "=You are a research assistant specialized in gathering relevant, specific background information for personalized cold outreach campaigns. You will be provided with a person's full name, their company, and location.\n\nYour task is to find unique, noteworthy details that demonstrate genuine research and create natural conversation hooks. Focus on:\n\nPERSON-SPECIFIC INTEL:\n- Recent career moves, promotions, or role changes\n- Published content (articles, LinkedIn posts, podcast appearances, interviews)\n- Speaking engagements, conference presentations, or webinars\n- Awards, recognitions, or notable achievements\n- Educational background if distinctive (specific programs, certifications)\n- Public social media activity that reveals interests or initiatives they care about\n- Any publicly stated challenges or goals in their role\n\nCOMPANY-SPECIFIC INTEL:\n- Recent funding rounds, acquisitions, or major partnerships\n- New product launches or feature releases\n- Expansion into new markets or locations\n- Hiring trends (rapid growth in specific departments)\n- Recent press coverage, company milestones, or announcements\n- Technology stack changes or initiatives (if relevant)\n- Company culture details or values mentioned publicly\n\nFORMATTING REQUIREMENTS:\n- Provide 3-5 specific, actionable insights maximum\n- Include timestamps when relevant (\"announced last month\", \"posted 2 weeks ago\")\n- Cite sources for credibility but keep it brief\n- Flag if information is limited or person/company has minimal online presence\n- Prioritize recent information (last 6 months heavily preferred)\n- Avoid generic information available on basic LinkedIn profiles\n\nOutput format:\n**Key Insights:**\n1. [Specific, timely detail with context]\n2. [Another unique finding]\n...\n\n**Suggested Opening Hook:** [One sentence suggesting how to reference this in outreach]\n\nAvoid:\n- Generic company descriptions anyone could find\n- Outdated information (older than 12 months unless highly relevant)\n- Assumptions or speculation\n- Information that feels invasive or overly personal",
+              "role": "system"
+            },
+            {
+              "content": "=Name: {{ $json.fullName }}\nCompany Name: {{ $json.organizationName }}\nLocation: {{ $json.country }}\nWebsite : {{ $json.organizationWebsite }}"
+            }
+          ]
+        },
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -48
+      ],
+      "id": "27815f35-9421-4e8c-9b21-858b6bb7dc87",
+      "name": "Message a model"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "",
+          "cachedResultUrl": ""
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        144
+      ],
+      "id": "2642e2eb-a0a1-4fde-89fd-1e2c8d148868",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 496,
+        "width": 1744,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        -208
+      ],
+      "id": "a5a20668-dd8c-4ff1-b879-21d015298c89",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Enrich",
+        "height": 496,
+        "width": 912,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        432,
+        -208
+      ],
+      "id": "01e485ea-201d-45ad-afab-3e7c7feac283",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Source",
+        "height": 496,
+        "width": 560,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        -208
+      ],
+      "id": "e448e6cf-0d90-4844-8235-77e268d72013",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Upload",
+        "height": 496,
+        "width": 512,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -208
+      ],
+      "id": "5b8ab10d-607e-4d40-8f82-1e0c5a0df52e",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "maxItems": 50
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -48
+      ],
+      "id": "85ede056-988a-4311-993a-590ee545dd2f",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        -48
+      ],
+      "id": "26e53b6f-4dfd-4ff1-a54f-5ff4fd79748d",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "content": "## ❄️ Cold Email Automation\n## Created by Emilian www.prolevelaiacademy.com www.prolevelsolutions.com\n\n## How it Works\n### - Manually scrape leads via Apollo\n### - Upload Apollo CSV to Google Sheets\n### - Execute flow, auto scrapes linkedin + web search\n### - Custom messaging generated via OpenAI\n### - Leads + messaging uploaded to Instantly\n\n## APIs Needed\n### - [Perplexity](https://www.perplexity.ai/account/api/group)\n### - [OpenAI](https://platform.openai.com/)\n### - [Instantly](https://app.instantly.ai/app/settings/integrations)\n\n",
+        "height": 496,
+        "width": 528,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        -208
+      ],
+      "id": "d505f5d2-e67a-4980-b2e9-d3f239d8cb1f",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1SITIzAJwl7Lqad-oZeswvYU8ai8VVv7ob6tBnlfPGVM",
+          "mode": "list",
+          "cachedResultName": "hotels_bg",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SITIzAJwl7Lqad-oZeswvYU8ai8VVv7ob6tBnlfPGVM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 500654170,
+          "mode": "list",
+          "cachedResultName": "hotels_bg",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1SITIzAJwl7Lqad-oZeswvYU8ai8VVv7ob6tBnlfPGVM/edit#gid=500654170"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Send": "Yes",
+            "row_number": "={{ $('Get row(s) in sheet').item.json.row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "fullName",
+              "displayName": "fullName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "firstName",
+              "displayName": "firstName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lastName",
+              "displayName": "lastName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "personal_email",
+              "displayName": "personal_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone_numbers",
+              "displayName": "phone_numbers",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "position",
+              "displayName": "position",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedinUrl",
+              "displayName": "linkedinUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "city",
+              "displayName": "city",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "displayName": "country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "seniority",
+              "displayName": "seniority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "functional",
+              "displayName": "functional",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationName",
+              "displayName": "organizationName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationWebsite",
+              "displayName": "organizationWebsite",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationLinkedinUrl",
+              "displayName": "organizationLinkedinUrl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationFoundedYear",
+              "displayName": "organizationFoundedYear",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationIndustry",
+              "displayName": "organizationIndustry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationSize",
+              "displayName": "organizationSize",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationDescription",
+              "displayName": "organizationDescription",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationSpecialities",
+              "displayName": "organizationSpecialities",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationCity",
+              "displayName": "organizationCity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationState",
+              "displayName": "organizationState",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "organizationCountry",
+              "displayName": "organizationCountry",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Send",
+              "displayName": "Send",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1424,
+        -48
+      ],
+      "id": "72ebf2b9-46ff-4574-a874-27fcbd6867d1",
+      "name": "Update row in sheet"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Generate Outreach Message": {
+      "main": [
+        [
+          {
+            "node": "Add Lead to Instantly AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Generate Outreach Message",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Generate Outreach Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Outreach Message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Lead to Instantly AI": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "32322b8f-58e1-479a-8ff2-7ff8997e6b92",
+  "meta": {
+    "instanceId": "48896197552a6b329258ab4756494a4f967cec3056671fe8f96198a43d91facc"
+  },
+  "id": "hv05yj0HUn3PXOo8",
+  "tags": [
+    {
+      "updatedAt": "2026-05-20T08:36:37.755Z",
+      "createdAt": "2026-05-20T08:36:37.755Z",
+      "id": "OWGJS4rMBJv5T5VP",
+      "name": "Pro Level Solutions"
+    },
+    {
+      "updatedAt": "2026-05-20T08:36:37.759Z",
+      "createdAt": "2026-05-20T08:36:37.759Z",
+      "id": "hwsthSBwIoBFhPkZ",
+      "name": "Cold Outreach"
+    }
+  ]
+}
